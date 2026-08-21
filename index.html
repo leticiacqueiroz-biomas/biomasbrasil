@@ -182,6 +182,41 @@
   }
   .piracanga-cta:hover{background:var(--green-dark);color:var(--white);}
 
+  /* ---- abertura (vídeo) ---- */
+  .film{
+    position:relative;aspect-ratio:16/9;width:100%;border-radius:14px;overflow:hidden;
+    background:var(--navy);box-shadow:0 18px 50px rgba(6,36,58,.22);
+  }
+  .film iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}
+  .film .poster{
+    position:absolute;inset:0;border:0;padding:0;cursor:pointer;
+    background:var(--navy);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:20px;
+  }
+  .film .poster img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    opacity:.42;filter:saturate(.85);
+  }
+  .film .poster::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(ellipse at center,rgba(6,36,58,.30) 0%,rgba(6,36,58,.86) 78%);
+  }
+  .film .play{
+    position:relative;z-index:2;width:78px;height:78px;border-radius:50%;
+    background:var(--green);display:flex;align-items:center;justify-content:center;
+    transition:transform .18s ease;
+  }
+  .film .poster:hover .play{transform:scale(1.08);}
+  .film .play svg{width:26px;height:26px;fill:var(--navy);margin-left:4px;}
+  .film .label{
+    position:relative;z-index:2;color:var(--white);font-weight:700;font-size:1rem;
+    letter-spacing:.02em;text-align:center;
+  }
+  .film .label small{
+    display:block;margin-top:6px;font-weight:600;font-size:.78rem;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--green);
+  }
+
   /* ---- support strip ---- */
   .support-strip{
     background:var(--navy);color:var(--white);border-radius:14px;padding:40px 38px;
@@ -211,6 +246,7 @@
   <div class="container nav">
     <a class="wordmark" href="#top">BIOMAS<small>BRASIL</small></a>
     <nav class="menu">
+      <a href="#abertura"><span class="pt">Abertura</span><span class="en">Opening</span></a>
       <a href="#missao"><span class="pt">Missão</span><span class="en">Mission</span></a>
       <a href="#fazemos"><span class="pt">O que fazemos</span><span class="en">What we do</span></a>
       <a href="#territorio"><span class="pt">Território</span><span class="en">Territory</span></a>
@@ -238,11 +274,34 @@
       <span class="en">Biomas Brasil produces and disseminates territorial intelligence so that communities and institutions can know their conditions, decide, and act collectively for the conservation and regeneration of ecosystems — at the scale of watersheds and micro-watersheds.</span>
     </p>
     <div class="cta">
-      <a class="btn btn-primary" href="#fazemos"><span class="pt">O que fazemos</span><span class="en">What we do</span></a>
-      <a class="btn btn-ghost" href="#territorio"><span class="pt">Onde atuamos</span><span class="en">Where we work</span></a>
+      <a class="btn btn-primary" href="#abertura"><span class="pt">Assistir à abertura</span><span class="en">Watch the opening</span></a>
+      <a class="btn btn-ghost" href="#fazemos"><span class="pt">O que fazemos</span><span class="en">What we do</span></a>
     </div>
   </div>
 </div>
+
+<!-- ABERTURA -->
+<section id="abertura" class="alt">
+  <div class="container">
+    <div class="section-head">
+      <h2><span class="pt">Do território à casa</span><span class="en">From the territory to the household</span></h2>
+      <p>
+        <span class="pt">Uma jornada de zoom pela biorregião, pela bacia do rio Piracanga, pela vila e até uma residência — com os indicadores de cuidado em cada nível.</span>
+        <span class="en">A zoom journey through the bioregion, the Piracanga river watershed, the village, and down to a single household — with the care indicators at each level.</span>
+      </p>
+    </div>
+    <div class="film" id="film">
+      <button class="poster" type="button" onclick="playFilm()" aria-label="Reproduzir a abertura">
+        <img src="abertura/assets/mapbio.webp" alt="" aria-hidden="true">
+        <span class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        <span class="label">
+          <span class="pt">Assistir à abertura</span><span class="en">Watch the opening</span>
+          <small>33s · <span class="pt">sem áudio</span><span class="en">no audio</span></small>
+        </span>
+      </button>
+    </div>
+  </div>
+</section>
 
 <!-- MISSÃO -->
 <section id="missao">
@@ -428,6 +487,18 @@
 </footer>
 
 <script>
+  // A abertura só é carregada quando a pessoa pede — mantém a home leve.
+  function playFilm(){
+    var box = document.getElementById('film');
+    var f = document.createElement('iframe');
+    f.src = 'abertura/';
+    f.title = 'Biomas Brasil — abertura';
+    f.setAttribute('allowfullscreen', '');
+    f.setAttribute('referrerpolicy', 'no-referrer');
+    box.innerHTML = '';
+    box.appendChild(f);
+  }
+
   function setLang(lang){
     document.body.className = 'lang-' + lang;
     document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
