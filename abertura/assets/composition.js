@@ -285,6 +285,8 @@ var SS_EXT_PLAY_MS = 400;
 // done so the exporter can wait for it.
 
 function useInlineFontsInto(svgRef) {
+  // Desativado na web: só era necessário para exportar vídeo.
+  if (!window.OM_CHROME) return;
   React.useEffect(() => {
     const svg = svgRef.current;
     const host = svg && svg.querySelector('foreignObject > div');
@@ -626,34 +628,22 @@ function Stage({
         overflow: 'hidden',
         minHeight: 0
       }
-    }, /*#__PURE__*/React.createElement("svg", {
-      ref: canvasRef,
-      width: width,
-      height: height,
-      "data-om-exportable-video-with-duration-secs": duration,
-      style: {
-        transform: `scale(${scale})`,
-        transformOrigin: 'center',
-        flexShrink: 0,
-        display: 'block'
-      }
-    }, /*#__PURE__*/React.createElement("foreignObject", {
-      x: "0",
-      y: "0",
-      width: "100%",
-      height: "100%"
     }, /*#__PURE__*/React.createElement("div", {
-      xmlns: "http://www.w3.org/1999/xhtml",
+      ref: canvasRef,
       style: {
         width,
         height,
         background,
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        transform: `scale(${scale})`,
+        transformOrigin: 'center',
+        flexShrink: 0,
+        willChange: 'transform'
       }
     }, /*#__PURE__*/React.createElement(TimelineContext.Provider, {
       value: ctxValue
-    }, children))))), window.OM_CHROME && /*#__PURE__*/React.createElement(PlaybackBar, {
+    }, children))), window.OM_CHROME && /*#__PURE__*/React.createElement(PlaybackBar, {
       time: displayTime,
       actualTime: time,
       duration: duration,
