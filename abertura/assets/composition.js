@@ -395,6 +395,9 @@ function Stage({
   const playTimes = playback && playback.mode === 'times' ? playback.count : null;
   const loopEff = playback ? playback.mode === 'loop' : loop;
   const [time, setTime] = React.useState(() => {
+    // Na web a peça sempre começa do zero. O playhead persistido só faz
+    // sentido no modo autoria — era ele que fazia o vídeo abrir no meio.
+    if (!window.OM_CHROME) return 0;
     try {
       const v = parseFloat(localStorage.getItem(persistKey + ':t') || '0');
       return isFinite(v) ? clamp(v, 0, duration) : 0;
@@ -421,6 +424,7 @@ function Stage({
 
   // Persist playhead
   React.useEffect(() => {
+    if (!window.OM_CHROME) return;
     try {
       localStorage.setItem(persistKey + ':t', String(time));
     } catch {}
@@ -431,7 +435,7 @@ function Stage({
     if (!stageRef.current) return;
     const el = stageRef.current;
     const measure = () => {
-      const barH = 44; // playback bar height
+      const barH = window.OM_CHROME ? 44 : 0; // a barra de autoria não existe na web
       const s = Math.min(el.clientWidth / width, (el.clientHeight - barH) / height);
       setScale(Math.max(0.05, s));
     };
@@ -587,6 +591,35 @@ function Stage({
   // self-describing — serializing it alone (for video export) then renders
   // with the right fonts. Sets data-om-fonts-inlined once done.
   useInlineFontsInto(canvasRef);
+
+  // API de controle exposta para a página que embute a peça.
+  React.useEffect(() => {
+    const api = {
+      play: () => setPlaying(true),
+      pause: () => setPlaying(false),
+      toggle: () => setPlaying(p => !p),
+      restart: () => {
+        setTime(0);
+        setPlaying(true);
+      },
+      seek: t => setTime(clamp(parseFloat(t) || 0, 0, duration)),
+      duration
+    };
+    window.OM_API = api;
+    window.dispatchEvent(new CustomEvent('om:ready'));
+    return () => {
+      if (window.OM_API === api) window.OM_API = null;
+    };
+  }, [duration]);
+  React.useEffect(() => {
+    if (typeof window.OM_ON_STATE === 'function') {
+      window.OM_ON_STATE({
+        time,
+        duration,
+        playing
+      });
+    }
+  }, [time, duration, playing]);
   const displayTime = hoverTime != null ? hoverTime : time;
   const ctxValue = React.useMemo(
   // extPlaying is ADDITIVE: "time is advancing under an external

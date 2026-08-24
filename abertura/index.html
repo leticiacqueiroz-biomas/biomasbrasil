@@ -140,10 +140,51 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 </style>
-<style>html,body{margin:0;height:100%;background:#0B2430;overflow:hidden}#app{position:fixed;inset:0}</style>
+<style>html,body{margin:0;height:100%;background:#0B2430;overflow:hidden}#app{position:fixed;inset:0}
+/* ---- controles ---- */
+#ctl{
+  position:fixed;left:0;right:0;bottom:0;z-index:10;
+  display:flex;align-items:center;gap:14px;
+  padding:14px 20px 16px;
+  font-family:'Montserrat',system-ui,sans-serif;
+  background:linear-gradient(to top,rgba(8,26,36,.92),rgba(8,26,36,0));
+  opacity:1;transition:opacity .35s ease;
+}
+#ctl.oculto{opacity:0;pointer-events:none;}
+#ctl button{
+  flex:none;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;
+  display:grid;place-items:center;transition:transform .15s ease,background .15s ease;
+}
+#ctl button:hover{transform:scale(1.08);}
+#ctl button svg{width:17px;height:17px;fill:#0B2430;}
+#play{background:#3FD68F;}
+#restart{background:rgba(234,244,241,.14);}
+#restart svg{fill:#EAF4F1;}
+#trilha{
+  flex:1;height:5px;border-radius:3px;background:rgba(234,244,241,.20);
+  cursor:pointer;position:relative;
+}
+#barra{position:absolute;inset:0 auto 0 0;width:0;border-radius:3px;background:#3FD68F;}
+#tempo{
+  flex:none;font-size:12px;font-weight:600;letter-spacing:.08em;
+  color:rgba(234,244,241,.75);font-variant-numeric:tabular-nums;min-width:74px;text-align:right;
+}
+@media(max-width:520px){ #tempo{display:none} }
+</style>
 </head>
 <body>
 <div id="app"></div>
+
+<div id="ctl">
+  <button id="play" type="button" aria-label="Pausar" title="Pausar (espaço)">
+    <svg viewBox="0 0 24 24"><path id="ico" d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+  </button>
+  <button id="restart" type="button" aria-label="Assistir de novo desde o início" title="Voltar ao início">
+    <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+  </button>
+  <div id="trilha" role="slider" aria-label="Linha do tempo" tabindex="0"><div id="barra"></div></div>
+  <div id="tempo">0:00 / 0:00</div>
+</div>
 <script>
 window.__resources = {"logo": "assets/logo.png", "mapBacia": "assets/mapbacia.webp", "mapBio": "assets/mapbio.webp", "mapVila": "assets/mapvila.webp", "mapCasa": "assets/mapcasa.webp"};
 window.OM_SCENES = '[{"name":"Abertura","dur":3,"desc":"Logo e titulo do Biomas Brasil surgem"},{"name":"Bioregional","dur":9,"desc":"Mapa da regiao da APA com os indicadores entrando ao vivo"},{"name":"Bacia","dur":8,"desc":"Zoom para a bacia hidrografica do Rio Piracanga"},{"name":"Vila","dur":5,"desc":"Zoom da bacia para a vila"},{"name":"Casa","dur":5,"desc":"Zoom ate uma residencia"},{"name":"Encerramento","dur":3,"desc":"Fechamento com logo e mensagem"}]';
@@ -155,5 +196,79 @@ window.OM_PLAYBACK = '{"mode":"loop"}';
 <script src="assets/biomas.js"></script>
 <script>
 ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(window.BiomasApp));
+</script>
+
+<script>
+(function(){
+  var ctl = document.getElementById('ctl');
+  var btnPlay = document.getElementById('play');
+  var btnRestart = document.getElementById('restart');
+  var ico = document.getElementById('ico');
+  var trilha = document.getElementById('trilha');
+  var barra = document.getElementById('barra');
+  var tempo = document.getElementById('tempo');
+
+  var ICO_PAUSE = 'M6 5h4v14H6zM14 5h4v14h-4z';
+  var ICO_PLAY  = 'M8 5v14l11-7z';
+
+  function mmss(s){
+    s = Math.max(0, Math.floor(s));
+    return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+  }
+
+  var ultimoSeg = -1, ultimoPlaying = null;
+
+  // O palco chama isto a cada quadro — só tocamos no DOM quando algo muda.
+  window.OM_ON_STATE = function(st){
+    barra.style.width = (st.duration ? (st.time/st.duration)*100 : 0) + '%';
+    var seg = Math.floor(st.time);
+    if (seg !== ultimoSeg){
+      ultimoSeg = seg;
+      tempo.textContent = mmss(st.time) + ' / ' + mmss(st.duration);
+    }
+    if (st.playing !== ultimoPlaying){
+      ultimoPlaying = st.playing;
+      ico.setAttribute('d', st.playing ? ICO_PAUSE : ICO_PLAY);
+      btnPlay.setAttribute('aria-label', st.playing ? 'Pausar' : 'Reproduzir');
+      btnPlay.title = st.playing ? 'Pausar (espaço)' : 'Reproduzir (espaço)';
+      if (!st.playing) mostrar(true);
+      else agendarOcultar();
+    }
+  };
+
+  var timer = null;
+  function mostrar(fixo){
+    ctl.classList.remove('oculto');
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (!fixo) agendarOcultar();
+  }
+  function agendarOcultar(){
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function(){
+      if (window.OM_API && ultimoPlaying) ctl.classList.add('oculto');
+    }, 2600);
+  }
+
+  btnPlay.addEventListener('click', function(){ if (window.OM_API) window.OM_API.toggle(); });
+  btnRestart.addEventListener('click', function(){ if (window.OM_API) window.OM_API.restart(); });
+
+  function buscar(e){
+    if (!window.OM_API) return;
+    var r = trilha.getBoundingClientRect();
+    var x = ((e.touches ? e.touches[0].clientX : e.clientX) - r.left) / r.width;
+    window.OM_API.seek(Math.min(1, Math.max(0, x)) * window.OM_API.duration);
+  }
+  trilha.addEventListener('click', buscar);
+
+  document.addEventListener('mousemove', function(){ mostrar(false); });
+  document.addEventListener('touchstart', function(){ mostrar(false); }, {passive:true});
+  document.addEventListener('keydown', function(e){
+    if (!window.OM_API) return;
+    if (e.code === 'Space'){ e.preventDefault(); window.OM_API.toggle(); mostrar(false); }
+    if (e.key === '0' || e.key === 'Home'){ e.preventDefault(); window.OM_API.restart(); mostrar(false); }
+  });
+
+  agendarOcultar();
+})();
 </script>
 </body></html>
